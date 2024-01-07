@@ -9,16 +9,20 @@ const io = new Server(httpServer,{
     origin: '*'
   }
 });
-
+// name:this.server_name,
+//       slovicka:this.slovicka_string,
+//       gameMode:this.current_mode,
+//       hosted:this.current_user,
 const arrServers = [];
 let num = 0;
 class classServer{
   constructor(data){
     this.number = num;
     this.name = data.name;
-    this.master = data.master;
-    this.game = data.game;
+    this.hosted = data.hosted;
+    this.gameMode = data.gameMode;
     this.people = [];
+    this.slovicka = data.slovicka;
   }
   addPerson(name){
     this.people.push(name);
@@ -27,7 +31,10 @@ class classServer{
 const wantToJoin = []
 io.on("connection", (socket) => {
   socket.on("c_vyhledatServers",(name)=>{
-    return !wantToJoin.includes(name) ? socket.emit("s_servers",arrServers) : socket.emit("s_failed_name","Chyba tvého jména, už existuje");
+    if(!wantToJoin.includes(name)){
+      wantToJoin.push(name);
+    }
+    return socket.emit("s_servers",arrServers)
   })
   socket.on("c_pripojitServer",(info)=>{
     socket.join(`room${info.number}`);
@@ -37,10 +44,12 @@ io.on("connection", (socket) => {
     return io.to(`room${info.number}`).emit("s_joined",{message:`Uživatel ${info.name} se připojil`,name:info.name});
   })
   socket.on("c_vytvorServer",(data)=>{
+    console.log(data)
     num+=1;
     const server = new classServer(data);
-    server.addPerson(data.master);
+    server.addPerson(data.hosted);
     arrServers.push(server);
+    console.log(server)
     socket.join(`room${num}`);
     return socket.emit("s_vytvorServer",{data:data,funguje:true});
   })
